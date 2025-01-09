@@ -2,18 +2,11 @@
 
 #include <Adafruit_NeoPixel.h>
 
-#if PATTERN_STYLE == 0
-  // ceil(floor(NUM_PIXELS / 2) / GRP_SIZE)
-  #define NUM_STEPS ((NUM_PIXELS / 2 + (GRP_SIZE - 1)) / GRP_SIZE)
-#else
-  #define NUM_STEPS (NUM_PIXELS / GRP_SIZE)
-#endif
-
 // Steps between STEP_STOP and STEP_GO represent the countdown steps
 #define STEP_STOP 0
 #define STEP_GO   (NUM_STEPS + 1)
 
-/* Define LED strips */
+// Define LED strips
 Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -61,21 +54,15 @@ void set_led_state(uint32_t step) {
     for (int i = 0; i < NUM_PIXELS; i++) {
       led_set_color(i, COLOR_GREEN);
     }
-  } else if (step > STEP_STOP) {
-    if (step == NUM_STEPS) {
-      // Last step
-      for (int i = 0; i < NUM_PIXELS; i++) {
-        led_set_color(i, COLOR_AMBER);
-      }
-    } else {
-      for (int i = 0; i < step * GRP_SIZE; i++) {
-        led_set_color(i, COLOR_AMBER);
-        led_set_color(NUM_PIXELS - i - 1, COLOR_AMBER);
-      }
-    }
-  } else {
+  } else if (step == STEP_STOP) {
     for (int i = 0; i < NUM_PIXELS; i++) {
       led_set_color(i, COLOR_RED);
+    }
+  } else {
+    const float grp_size = (float)((int)(NUM_PIXELS / 2)) / NUM_STEPS;
+    for (int i = floor((step - 1) * grp_size); i <= NUM_PIXELS / 2; i++) {
+      led_set_color(i, COLOR_AMBER);
+      led_set_color(NUM_PIXELS - i - 1, COLOR_AMBER);
     }
   }
 #else
@@ -88,8 +75,9 @@ void set_led_state(uint32_t step) {
       led_set_color(i, COLOR_RED);
     }
   } else {
-    const int px_len = ((NUM_STEPS - step + 1) * GRP_SIZE);
-    for (int i = 0; i < min(px_len, NUM_PIXELS); i++) {
+    const float grp_size = (float)NUM_PIXELS / NUM_STEPS;
+    const int px_len = ceil((NUM_STEPS - step + 1) * grp_size);
+    for (int i = 0; i < px_len; i++) {
       led_set_color(i, COLOR_AMBER);
     }
   }

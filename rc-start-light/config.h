@@ -4,8 +4,8 @@
 
 // Number of pixels per led strips
 #define NUM_PIXELS 20
-// Number of pixels in each group
-#define GRP_SIZE 4
+// Number of steps in the countdown (preferably divisible from NUM_PIXELS)
+#define NUM_STEPS 4
 // Which LED pattern to use
 #define PATTERN_STYLE 1
 
