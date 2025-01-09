@@ -1,47 +1,62 @@
+#include "config.h"
+
 #include <Adafruit_NeoPixel.h>
 
-#define LED_PIN 3
-#define RST_BTN_PIN 2
+#if PATTERN_STYLE == 0
+  // ceil(floor(NUM_PIXELS / 2) / GRP_SIZE)
+  #define NUM_STEPS ((NUM_PIXELS / 2 + (GRP_SIZE - 1)) / GRP_SIZE)
+#else
+  #define NUM_STEPS (NUM_PIXELS / GRP_SIZE)
+#endif
 
-#define NUM_PIXELS 20
-#define GRP_SIZE 4
-
-#define COUNT_INTERVAL 1000
-
-#define COLOR_RED   255,   0, 0
-#define COLOR_AMBER 255, 200, 0
-#define COLOR_GREEN   0, 255, 0
-
-// NUM_STEPS = ceil(floor(NUM_PIXELS / 2) / GRP_SIZE)
-#define NUM_STEPS ((NUM_PIXELS / 2 + (GRP_SIZE - 1)) / GRP_SIZE)
+// Steps between STEP_STOP and STEP_GO represent the countdown steps
 #define STEP_STOP 0
 #define STEP_GO   (NUM_STEPS + 1)
 
-Adafruit_NeoPixel strip_0(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+/* Define LED strips */
+Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
 
+/**
+ * Returns true if reset button is triggered.
+ */
 bool is_reset_btn() {
   return !digitalRead(RST_BTN_PIN);
 }
 
-/* Wrapper for clear */
+/**
+ * Wrapper for clear.
+ */
 void led_clear() {
   strip_0.clear();
+  strip_1.clear();
 }
 
-/* Wrapper for show */
+/**
+ * Wrapper for show.
+ */
 void led_show() {
   strip_0.show();
+  strip_1.show();
 }
 
-/* Wrapper for setPixelColor */
-void led_set_color(const int pixel, const int color_r, const int color_g,
-    const int color_b) {
-  strip_0.setPixelColor(pixel, strip_0.Color(color_r, color_g, color_b));
+/**
+ * Wrapper for setPixelColor.
+ */
+void led_set_color(uint16_t pixel, uint32_t color) {
+  strip_0.setPixelColor(pixel, color);
+  strip_1.setPixelColor(pixel, color);
 }
 
-void set_led_state(const int step) {
+/**
+ * Set led strips state for a given step.
+ *
+ * The value of step is within [STEP_STOP, STEP_GO].
+ */
+void set_led_state(uint32_t step) {
   led_clear();
 
+#if PATTERN_STYLE == 0
   if (step == STEP_GO) {
     for (int i = 0; i < NUM_PIXELS; i++) {
       led_set_color(i, COLOR_GREEN);
@@ -63,6 +78,22 @@ void set_led_state(const int step) {
       led_set_color(i, COLOR_RED);
     }
   }
+#else
+  if (step == STEP_GO) {
+    for (int i = 0; i < NUM_PIXELS; i++) {
+      led_set_color(i, COLOR_GREEN);
+    }
+  } else if (step == STEP_STOP) {
+    for (int i = 0; i < NUM_PIXELS; i++) {
+      led_set_color(i, COLOR_RED);
+    }
+  } else {
+    const int px_len = ((NUM_STEPS - step + 1) * GRP_SIZE);
+    for (int i = 0; i < min(px_len, NUM_PIXELS); i++) {
+      led_set_color(i, COLOR_AMBER);
+    }
+  }
+#endif
 
   led_show();
 }
