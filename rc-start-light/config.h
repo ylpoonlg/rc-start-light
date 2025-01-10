@@ -20,7 +20,11 @@
 // IR receiver protocol
 #define IR_PROTO NEC
 // Command to use for reset
-#define IR_CMD_RST 0x40
+#define IR_CMD_RST 0x5C
+// Command to use for start
+#define IR_CMD_STR 0x41
+// Command to use for LED off
+#define IR_CMD_OFF 0x40
 
 // Verbosity of the debug log
 //  -1: Disable logs.
