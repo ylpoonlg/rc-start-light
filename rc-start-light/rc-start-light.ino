@@ -5,10 +5,16 @@
 #include <Adafruit_NeoPixel.h>
 #include <IRremote.hpp>
 
-#define LOGPRINT(v, s) {        \
-          if (VERBOSE >= v)     \
-            Serial.print(s);    \
-        }
+// Enable virtual LED if verbosity is 0
+#if VERBOSE == 0
+#define VIRT_LED
+#endif
+
+#ifndef VIRT_LED
+#define LOGPRINT(v, s) if (VERBOSE >= v) Serial.print(s);
+#else
+#define LOGPRINT(v, s)
+#endif
 
 // Steps between STEP_STOP and STEP_GO represent the countdown steps
 #define STEP_STOP 0
@@ -29,7 +35,7 @@ bool is_reset() {
     if (ir_data.protocol == IR_PROTO) {
       LOGPRINT(4, "[IR] CMD: ")
       LOGPRINT(4, ir_data.command)
-      LOGPRINT(4, "\n")
+      LOGPRINT(4, "\r\n")
       if (ir_data.command == IR_CMD_RST) {
         ir_reset = true;
       }
@@ -56,6 +62,19 @@ void led_clear() {
 void led_show() {
   strip_0.show();
   strip_1.show();
+
+#ifdef VIRT_LED
+  for (int i = 0; i < NUM_PIXELS; i++) {
+		const uint32_t color = strip_0.getPixelColor(i);
+    const uint8_t r = color >> 16 & 0xff;
+    const uint8_t g = color >> 8 & 0xff;
+    const uint8_t b = color & 0xff;
+		char strip_s[NUM_PIXELS * 10];
+		sprintf(strip_s, "\033[48;2;%u;%u;%um  \033[0m ", r, g, b);
+    Serial.print(strip_s);
+  }
+  Serial.print("\033[0m\r");
+#endif
 }
 
 /**
@@ -74,7 +93,7 @@ void led_set_color(uint16_t pixel, uint32_t color) {
 void set_led_state(uint32_t step) {
   LOGPRINT(3, "[STEP ");
   LOGPRINT(3, step);
-  LOGPRINT(3, "] Set LED state\n");
+  LOGPRINT(3, "] Set LED state\r\n");
 
   led_clear();
 
@@ -116,7 +135,7 @@ void set_led_state(uint32_t step) {
 }
 
 void do_reset() {
-  LOGPRINT(1, "[RESET]\n");
+  LOGPRINT(1, "[RESET]\r\n");
 
   for (int i = 1; i <= NUM_STEPS; i++) {
     set_led_state(i);
@@ -127,7 +146,7 @@ void do_reset() {
   delay(COUNT_INTERVAL * 2);
   set_led_state(STEP_STOP);
 
-  LOGPRINT(2, "[FINISHED]\n");
+  LOGPRINT(2, "[FINISHED]\r\n");
 }
 
 void post_loop() {
@@ -143,10 +162,11 @@ void setup() {
   Serial.begin(115200);
   IrReceiver.begin(IR_RCV_PIN, ENABLE_LED_FEEDBACK);
   strip_0.begin();
+
+  set_led_state(STEP_STOP);
 }
 
 void loop() {
-  set_led_state(STEP_STOP);
   if (is_reset()) {
     do_reset();
   }

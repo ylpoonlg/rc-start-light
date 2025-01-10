@@ -27,6 +27,9 @@ upload:
 			--upload --port $(PORT) rc-start-light
 	echo "Uploaded."
 
+serial:
+	picocom -b 115200 $(PORT)
+
 $(BUILD_DIR):
 	mkdir -p $@
 

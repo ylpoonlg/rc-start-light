@@ -22,5 +22,7 @@
 // Command to use for reset
 #define IR_CMD_RST 0x40
 
-// Verbosity of the debug log (0 to disable)
-#define VERBOSE 2
+// Verbosity of the debug log
+//  -1: Disable logs.
+//   0: Enables virtual LED (Prints simulated strip to serial).
+#define VERBOSE 0
