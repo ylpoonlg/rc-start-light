@@ -50,7 +50,10 @@ void ir_scan() {
         update_state(STATE_STOP);
         break;
       case IR_CMD_STR:
-        update_state(STATE_STOP + 1);
+        // Must reset before start
+        if (cur_state == STATE_STOP) {
+          update_state(STATE_STOP + 1);
+        }
         break;
       case IR_CMD_OFF:
         update_state(STATE_OFF);
@@ -77,6 +80,7 @@ void led_show() {
   strip_1.show();
 
 #ifdef VIRT_LED
+  Serial.print("\r");
   for (int i = 0; i < NUM_PIXELS; i++) {
     const uint32_t color = strip_0.getPixelColor(i);
     const uint8_t r = color >> 16 & 0xff;
@@ -86,7 +90,7 @@ void led_show() {
     sprintf(strip_s, "\033[48;2;%u;%u;%um  \033[0m ", r, g, b);
     Serial.print(strip_s);
   }
-  Serial.print("\033[0m\r");
+  Serial.print("\033[0m");
 #endif
 }
 
@@ -157,7 +161,7 @@ void loop() {
   const uint32_t cur_time = millis();
   if (cur_state >= STATE_GO) {
     if (cur_time >= state_start_time + COUNT_INTERVAL * 2) {
-      update_state(STATE_STOP);
+      update_state(STATE_OFF);
     }
   } else if (cur_state > STATE_STOP) {
     if (cur_time >= state_start_time + COUNT_INTERVAL) {
@@ -170,5 +174,5 @@ void loop() {
     set_led_state(cur_state);
   }
 
-  delay(100);
+  delay(REFRESH_INTERVAL);
 }
