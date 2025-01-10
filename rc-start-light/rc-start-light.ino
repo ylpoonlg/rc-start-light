@@ -1,6 +1,9 @@
 #include "config.h"
 
+#define DECODE_NEC
+
 #include <Adafruit_NeoPixel.h>
+#include <IRremote.hpp>
 
 // Steps between STEP_STOP and STEP_GO represent the countdown steps
 #define STEP_STOP 0
@@ -11,10 +14,26 @@ Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
 
 /**
- * Returns true if reset button is triggered.
+ * Returns true if reset is triggered.
  */
-bool is_reset_btn() {
-  return !digitalRead(RST_BTN_PIN);
+bool is_reset() {
+  // Check for IR remote
+  bool ir_reset = false;
+  if (IrReceiver.decode()) {
+    IRData ir_data = IrReceiver.decodedIRData;
+    if (ir_data.protocol == IR_PROTO) {
+      Serial.print("[IR] CMD: ");
+      Serial.println(ir_data.command);
+      if (ir_data.command == IR_CMD_RST) {
+        ir_reset = true;
+      }
+    }
+  }
+
+  // Check for reset button
+  bool btn_reset = !digitalRead(RST_BTN_PIN);
+
+  return ir_reset || btn_reset;
 }
 
 /**
@@ -87,6 +106,8 @@ void set_led_state(uint32_t step) {
 }
 
 void do_reset() {
+  Serial.println("[RESET]");
+
   for (int i = 1; i <= NUM_STEPS; i++) {
     set_led_state(i);
     delay(COUNT_INTERVAL);
@@ -97,17 +118,27 @@ void do_reset() {
   set_led_state(STEP_STOP);
 }
 
+void post_loop() {
+  // Clean up IR
+  if (IrReceiver.decode()) {
+    IrReceiver.resume();
+  }
+}
+
 void setup() {
   pinMode(RST_BTN_PIN, INPUT_PULLUP);
 
+  Serial.begin(115200);
+  IrReceiver.begin(IR_RCV_PIN, ENABLE_LED_FEEDBACK);
   strip_0.begin();
 }
 
 void loop() {
   set_led_state(STEP_STOP);
-  if (is_reset_btn()) {
+  if (is_reset()) {
     do_reset();
   }
 
+  post_loop();
   delay(50);
 }
