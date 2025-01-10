@@ -21,3 +21,6 @@
 #define IR_PROTO NEC
 // Command to use for reset
 #define IR_CMD_RST 0x40
+
+// Verbosity of the debug log (0 to disable)
+#define VERBOSE 2

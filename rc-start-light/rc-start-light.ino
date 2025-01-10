@@ -5,6 +5,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <IRremote.hpp>
 
+#define LOGPRINT(v, s) {        \
+          if (VERBOSE >= v)     \
+            Serial.print(s);    \
+        }
+
 // Steps between STEP_STOP and STEP_GO represent the countdown steps
 #define STEP_STOP 0
 #define STEP_GO   (NUM_STEPS + 1)
@@ -22,8 +27,9 @@ bool is_reset() {
   if (IrReceiver.decode()) {
     IRData ir_data = IrReceiver.decodedIRData;
     if (ir_data.protocol == IR_PROTO) {
-      Serial.print("[IR] CMD: ");
-      Serial.println(ir_data.command);
+      LOGPRINT(4, "[IR] CMD: ")
+      LOGPRINT(4, ir_data.command)
+      LOGPRINT(4, "\n")
       if (ir_data.command == IR_CMD_RST) {
         ir_reset = true;
       }
@@ -66,6 +72,10 @@ void led_set_color(uint16_t pixel, uint32_t color) {
  * The value of step is within [STEP_STOP, STEP_GO].
  */
 void set_led_state(uint32_t step) {
+  LOGPRINT(3, "[STEP ");
+  LOGPRINT(3, step);
+  LOGPRINT(3, "] Set LED state\n");
+
   led_clear();
 
 #if PATTERN_STYLE == 0
@@ -106,7 +116,7 @@ void set_led_state(uint32_t step) {
 }
 
 void do_reset() {
-  Serial.println("[RESET]");
+  LOGPRINT(1, "[RESET]\n");
 
   for (int i = 1; i <= NUM_STEPS; i++) {
     set_led_state(i);
@@ -116,6 +126,8 @@ void do_reset() {
   set_led_state(STEP_GO);
   delay(COUNT_INTERVAL * 2);
   set_led_state(STEP_STOP);
+
+  LOGPRINT(2, "[FINISHED]\n");
 }
 
 void post_loop() {
