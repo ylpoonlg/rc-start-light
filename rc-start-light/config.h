@@ -1,6 +1,7 @@
 // Verbosity of the debug log
 //  -1: Disable logs.
 //   0: Enables virtual LED (Prints simulated strip to serial).
+//   >0: Enable debug logs.
 #define VERBOSE 0
 
 // Pin assignments
@@ -14,7 +15,10 @@
 // Number of steps in the countdown (preferably divisible from NUM_PIXELS)
 #define NUM_STEPS 3
 // Which LED pattern to use
-#define PATTERN_STYLE 1
+//   0: Sequential
+//   1: Symmetrical
+//   2: Symmetrical, w/Blinking red
+#define PATTERN_STYLE 2
 // Reverse countdown pattern
 #define PATTERN_REVERSE true
 

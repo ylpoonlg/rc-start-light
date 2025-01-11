@@ -26,13 +26,14 @@ Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
 
 // Global states
-int32_t cur_state = STATE_STOP, last_state = cur_state - 1;
-uint32_t state_start_time = 0;
+int32_t cur_state = STATE_STOP;
+int32_t last_state = STATE_OFF;
+uint32_t cur_state_start_time = 0;
 char log_buf[256];
 
 void update_state(int32_t state) {
   cur_state = state;
-  state_start_time = millis();
+  cur_state_start_time = millis();
 }
 
 /**
@@ -125,11 +126,26 @@ void apply_state(int32_t state, uint32_t state_time) {
     state = NUM_STEPS - state + 1;
 #endif
 
-#if PATTERN_STYLE == 1
+#if PATTERN_STYLE == 1 || PATTERN_STYLE == 2
   if (state == STATE_GO) {
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_GREEN);
   } else if (state == STATE_STOP) {
+#if PATTERN_STYLE == 2
+    const int side_width = NUM_PIXELS / 3;
+    for (int i = 0; i < side_width; i++) {
+      led_set_color(i, COLOR_RED);
+      led_set_color(NUM_PIXELS - i - 1, COLOR_RED);
+    }
+    // Idle blink
+    if ((state_time / 150) % 15 == 0) {
+      const int side_offset = side_width;
+      for (int i = side_offset; i < NUM_PIXELS - side_offset; i++) {
+        led_set_color(i, COLOR_RED);
+      }
+    }
+#else
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_RED);
+#endif
   } else if (state != STATE_OFF) {
     const float grp_size = ((float)NUM_PIXELS / 2) / (NUM_STEPS - 0.5);
     const int start_px = floor((state - 1) * grp_size);
@@ -188,15 +204,12 @@ void loop() {
 
   // Update state
   const uint32_t cur_time = millis();
-  int32_t next_state = get_next_state(cur_state, cur_time - state_start_time);
+  int32_t next_state = get_next_state(cur_state, cur_time - cur_state_start_time);
   if (next_state != cur_state) update_state(next_state);
 
   // Apply state
-  // Skip if state is unchanged
-  if (cur_state != last_state) {
-    apply_state(cur_state, cur_time - state_start_time);
-    last_state = cur_state;
-  }
+  apply_state(cur_state, cur_time - cur_state_start_time);
+  last_state = cur_state;
 
   delay(REFRESH_INTERVAL);
 }
