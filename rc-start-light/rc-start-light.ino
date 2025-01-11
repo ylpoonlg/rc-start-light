@@ -26,7 +26,7 @@ Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
 
 // Global states
-int32_t cur_state = STATE_STOP;
+int32_t cur_state = STATE_STOP, last_state = cur_state - 1;
 uint32_t state_start_time = 0;
 char log_buf[256];
 
@@ -61,6 +61,15 @@ void ir_scan() {
       }
     }
     IrReceiver.resume();
+  }
+}
+
+/**
+ * Poll for IR signal and handle command.
+ */
+void btn_scan() {
+  if (!digitalRead(RST_BTN_PIN)) {
+    update_state(STATE_STOP);
   }
 }
 
@@ -103,14 +112,13 @@ void led_set_color(uint16_t pixel, uint32_t color) {
 }
 
 /**
- * Set led strips state for a given state.
+ * Apply state to led strips.
  */
-void set_led_state(int32_t state) {
+void apply_state(int32_t state, uint32_t state_time) {
   sprintf(log_buf, "[STATE %d] Set LED State\r\n", state);
   LOGPRINT(3, log_buf)
 
   led_clear();
-
 
 #if PATTERN_STYLE == 0
   if (state == STATE_GO) {
@@ -141,6 +149,22 @@ void set_led_state(int32_t state) {
   led_show();
 }
 
+/**
+ * Mapping of the state transition.
+ */
+int32_t get_next_state(int32_t state, uint32_t state_time) {
+  if (state >= STATE_GO) {
+    if (state_time >= COUNT_INTERVAL * 2) {
+      return STATE_OFF;
+    }
+  } else if (state > STATE_STOP) {
+    if (state_time >= COUNT_INTERVAL) {
+      return state + 1;
+    }
+  }
+  return state;
+}
+
 void setup() {
   pinMode(RST_BTN_PIN, INPUT_PULLUP);
 
@@ -148,30 +172,25 @@ void setup() {
   IrReceiver.begin(IR_RCV_PIN, ENABLE_LED_FEEDBACK);
   strip_0.begin();
 
-  cur_state = STATE_STOP;
-  set_led_state(cur_state);
+  update_state(STATE_STOP);
+  apply_state(cur_state, 0);
 }
 
 void loop() {
-  const int32_t last_state = cur_state;
-
+  // Polling
   ir_scan();
+  btn_scan();
 
-  // State transition
+  // Update state
   const uint32_t cur_time = millis();
-  if (cur_state >= STATE_GO) {
-    if (cur_time >= state_start_time + COUNT_INTERVAL * 2) {
-      update_state(STATE_OFF);
-    }
-  } else if (cur_state > STATE_STOP) {
-    if (cur_time >= state_start_time + COUNT_INTERVAL) {
-      update_state(cur_state + 1);
-    }
-  }
+  int32_t next_state = get_next_state(cur_state, cur_time - state_start_time);
+  if (next_state != cur_state) update_state(next_state);
 
-  // Check if state has changed
+  // Apply state
+  // Skip if state is unchanged
   if (cur_state != last_state) {
-    set_led_state(cur_state);
+    apply_state(cur_state, cur_time - state_start_time);
+    last_state = cur_state;
   }
 
   delay(REFRESH_INTERVAL);
