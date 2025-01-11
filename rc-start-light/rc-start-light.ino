@@ -120,16 +120,21 @@ void apply_state(int32_t state, uint32_t state_time) {
 
   led_clear();
 
-#if PATTERN_STYLE == 0
+#if PATTERN_REVERSE
+  if (state > STATE_STOP && state < STATE_GO)
+    state = NUM_STEPS - state + 1;
+#endif
+
+#if PATTERN_STYLE == 1
   if (state == STATE_GO) {
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_GREEN);
   } else if (state == STATE_STOP) {
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_RED);
   } else if (state != STATE_OFF) {
-    const float grp_size = (float)((int)(NUM_PIXELS / 2)) / NUM_STEPS;
-    for (int i = floor((state - 1) * grp_size); i <= NUM_PIXELS / 2; i++) {
+    const float grp_size = ((float)NUM_PIXELS / 2) / (NUM_STEPS - 0.5);
+    const int start_px = floor((state - 1) * grp_size);
+    for (int i = start_px; i < NUM_PIXELS - start_px; i++) {
       led_set_color(i, COLOR_AMBER);
-      led_set_color(NUM_PIXELS - i - 1, COLOR_AMBER);
     }
   }
 #else

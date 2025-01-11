@@ -12,9 +12,11 @@
 // Number of pixels per led strips
 #define NUM_PIXELS 20
 // Number of steps in the countdown (preferably divisible from NUM_PIXELS)
-#define NUM_STEPS 4
+#define NUM_STEPS 3
 // Which LED pattern to use
 #define PATTERN_STYLE 1
+// Reverse countdown pattern
+#define PATTERN_REVERSE true
 
 // Interval between each step (in milliseconds)
 #define COUNT_INTERVAL 1000
