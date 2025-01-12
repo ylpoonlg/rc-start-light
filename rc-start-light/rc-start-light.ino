@@ -192,6 +192,7 @@ void setup() {
   Serial.begin(115200);
   IrReceiver.begin(IR_RCV_PIN, ENABLE_LED_FEEDBACK);
   strip_0.begin();
+  strip_1.begin();
 
   update_state(STATE_STOP);
   apply_state(cur_state, 0);
