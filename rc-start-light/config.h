@@ -1,11 +1,11 @@
 // Pin assignments
-//	 * Primary LED strip
+//   * Primary LED strip
 #define STRIP0_PIN 5
-//	 * Secondary LED strip (optional)
+//   * Secondary LED strip (optional)
 #define STRIP1_PIN 6
-//	 * IR receiver
+//   * IR receiver
 #define IR_RCV_PIN 4
-//	 * Reset button (optional)
+//   * Reset button (optional)
 #define RST_BTN_PIN 2
 
 // Number of pixels per led strips
@@ -24,15 +24,17 @@
 #define IR_PROTO NEC
 // IR commands - Set VERBOSE to 4 (or above) and check serial monitor to find
 // the command for each button on the remote.
-//   * Reset
-#define IR_CMD_RST 0x40
+//   * Toggle auto/manual mode
+#define IR_CMD_MODE 0x40
 //   * Start
-#define IR_CMD_STR 0x41
+#define IR_CMD_START 0x41
 //   * Turn off
 #define IR_CMD_OFF 0x5D
 
 // Interval between each step (in milliseconds)
 #define COUNT_INTERVAL 1000
+// Interval between each restart in auto mode (in milliseconds)
+#define RESTART_INTERVAL 4000
 // Interval between each refresh loop (in milliseconds)
 #define REFRESH_INTERVAL 50
 

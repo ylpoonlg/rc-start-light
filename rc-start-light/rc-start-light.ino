@@ -21,6 +21,9 @@
 #define STATE_STOP 0
 #define STATE_GO   (NUM_STEPS + 1)
 
+#define MODE_MANUAL 0
+#define MODE_AUTO   1
+
 // Define LED strips
 Adafruit_NeoPixel strip_0(NUM_PIXELS, STRIP0_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip_1(NUM_PIXELS, STRIP1_PIN, NEO_GRB + NEO_KHZ800);
@@ -30,6 +33,7 @@ int32_t cur_state = STATE_STOP;
 int32_t last_state = STATE_OFF;
 uint32_t cur_state_start_time = 0;
 char log_buf[256];
+int32_t cur_mode = MODE_AUTO;
 
 void update_state(int32_t state) {
   cur_state = state;
@@ -47,14 +51,12 @@ void ir_scan() {
       LOGPRINT(4, log_buf)
 
       switch (ir_data.command) {
-      case IR_CMD_RST:
+      case IR_CMD_MODE:
         update_state(STATE_STOP);
+        cur_mode = (cur_mode == MODE_AUTO) ? MODE_MANUAL : MODE_AUTO;
         break;
-      case IR_CMD_STR:
-        // Must reset before start
-        if (cur_state == STATE_STOP) {
-          update_state(STATE_STOP + 1);
-        }
+      case IR_CMD_START:
+        update_state(STATE_STOP + 1);
         break;
       case IR_CMD_OFF:
         update_state(STATE_OFF);
@@ -115,7 +117,7 @@ void led_set_color(uint16_t pixel, uint32_t color) {
 /**
  * Apply state to led strips.
  */
-void apply_state(int32_t state, uint32_t state_time) {
+void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
   sprintf(log_buf, "[STATE %d] Set LED State\r\n", state);
   LOGPRINT(3, log_buf)
 
@@ -137,7 +139,9 @@ void apply_state(int32_t state, uint32_t state_time) {
       led_set_color(NUM_PIXELS - i - 1, COLOR_RED);
     }
     // Idle blink
-    if ((state_time / 150) % 15 == 0) {
+    const uint32_t blink_time = state_time / REFRESH_INTERVAL;
+    const uint32_t blink_rate = mode == MODE_MANUAL ? 40 : 20;
+    if (blink_time % blink_rate < (mode == MODE_MANUAL ? 8 : 2)) {
       const int side_offset = side_width;
       for (int i = side_offset; i < NUM_PIXELS - side_offset; i++) {
         led_set_color(i, COLOR_RED);
@@ -173,15 +177,17 @@ void apply_state(int32_t state, uint32_t state_time) {
 /**
  * Mapping of the state transition.
  */
-int32_t get_next_state(int32_t state, uint32_t state_time) {
+int32_t get_next_state(int32_t mode, int32_t state, uint32_t state_time) {
   if (state >= STATE_GO) {
     if (state_time >= COUNT_INTERVAL * 2) {
-      return STATE_OFF;
+      return STATE_STOP;
     }
   } else if (state > STATE_STOP) {
     if (state_time >= COUNT_INTERVAL) {
       return state + 1;
     }
+  } else if (state == STATE_STOP && mode == MODE_AUTO) {
+    if (state_time >= RESTART_INTERVAL) return STATE_STOP + 1;
   }
   return state;
 }
@@ -195,7 +201,6 @@ void setup() {
   strip_1.begin();
 
   update_state(STATE_STOP);
-  apply_state(cur_state, 0);
 }
 
 void loop() {
@@ -205,11 +210,12 @@ void loop() {
 
   // Update state
   const uint32_t cur_time = millis();
-  int32_t next_state = get_next_state(cur_state, cur_time - cur_state_start_time);
+  int32_t next_state =
+    get_next_state(cur_mode, cur_state, cur_time - cur_state_start_time);
   if (next_state != cur_state) update_state(next_state);
 
   // Apply state
-  apply_state(cur_state, cur_time - cur_state_start_time);
+  apply_state(cur_mode, cur_state, cur_time - cur_state_start_time);
   last_state = cur_state;
 
   delay(REFRESH_INTERVAL);
