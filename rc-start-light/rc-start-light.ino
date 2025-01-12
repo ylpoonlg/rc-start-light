@@ -36,6 +36,9 @@ char log_buf[256];
 int32_t cur_mode = MODE_AUTO;
 
 void update_state(int32_t state) {
+  sprintf(log_buf, "[STATE] Update state: %d -> %d\r\n", cur_state, state);
+  LOGPRINT(3, log_buf)
+
   cur_state = state;
   cur_state_start_time = millis();
 }
@@ -46,6 +49,7 @@ void update_state(int32_t state) {
 void ir_scan() {
   if (IrReceiver.decode()) {
     IRData ir_data = IrReceiver.decodedIRData;
+    bool is_repeat = ir_data.flags & IRDATA_FLAGS_IS_REPEAT;
     if (ir_data.protocol == IR_PROTO) {
       sprintf(log_buf, "[IR] CMD: 0x%x\r\n", ir_data.command);
       LOGPRINT(4, log_buf)
@@ -53,7 +57,8 @@ void ir_scan() {
       switch (ir_data.command) {
       case IR_CMD_MODE:
         update_state(STATE_STOP);
-        cur_mode = (cur_mode == MODE_AUTO) ? MODE_MANUAL : MODE_AUTO;
+        if (!is_repeat)
+          cur_mode = (cur_mode == MODE_AUTO) ? MODE_MANUAL : MODE_AUTO;
         break;
       case IR_CMD_START:
         update_state(STATE_STOP + 1);
@@ -118,9 +123,6 @@ void led_set_color(uint16_t pixel, uint32_t color) {
  * Apply state to led strips.
  */
 void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
-  sprintf(log_buf, "[STATE %d] Set LED State\r\n", state);
-  LOGPRINT(3, log_buf)
-
   led_clear();
 
 #if PATTERN_REVERSE
@@ -133,18 +135,21 @@ void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_GREEN);
   } else if (state == STATE_STOP) {
 #if PATTERN_STYLE == 2
-    const int side_width = NUM_PIXELS / 3;
-    for (int i = 0; i < side_width; i++) {
-      led_set_color(i, COLOR_RED);
-      led_set_color(NUM_PIXELS - i - 1, COLOR_RED);
-    }
-    // Idle blink
-    const uint32_t blink_time = state_time / REFRESH_INTERVAL;
-    const uint32_t blink_rate = mode == MODE_MANUAL ? 40 : 20;
-    if (blink_time % blink_rate < (mode == MODE_MANUAL ? 8 : 2)) {
-      const int side_offset = side_width;
-      for (int i = side_offset; i < NUM_PIXELS - side_offset; i++) {
+    if (mode == MODE_MANUAL) {
+      for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_RED);
+    } else {
+      const int side_width = NUM_PIXELS / 3;
+      for (int i = 0; i < side_width; i++) {
         led_set_color(i, COLOR_RED);
+        led_set_color(NUM_PIXELS - i - 1, COLOR_RED);
+      }
+      // Blink
+      const uint32_t blink_time = state_time / REFRESH_INTERVAL;
+      if (blink_time % 20 < 2) {
+        const int side_offset = side_width;
+        for (int i = side_offset; i < NUM_PIXELS - side_offset; i++) {
+          led_set_color(i, COLOR_RED);
+        }
       }
     }
 #else
