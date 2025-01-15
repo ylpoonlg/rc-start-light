@@ -156,8 +156,8 @@ void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
     for (int i = 0; i < NUM_PIXELS; i++) led_set_color(i, COLOR_RED);
 #endif
   } else if (state != STATE_OFF) {
-    const float grp_size = ((float)NUM_PIXELS / 2) / (NUM_STEPS - 0.5);
-    const int start_px = floor((state - 1) * grp_size);
+    const float grp_size = ((float)NUM_PIXELS / 2) / (NUM_STEPS + 1 - 0.5);
+    const int start_px = floor((state) * grp_size);
     for (int i = start_px; i < NUM_PIXELS - start_px; i++) {
       led_set_color(i, COLOR_AMBER);
     }
