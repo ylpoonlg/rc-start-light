@@ -1,3 +1,8 @@
+# Example Usage:
+# 	Compile: make compile FQBN="arduino:avr:uno"
+# 	Upload: make upload FQBN="arduino:avr:nano" BOARD_OPT="cpu=atmega328old" PORT="/dev/ttyUSB1"
+
+SRC_DIR = ./rc-start-light
 BUILD_DIR = ./build
 
 ifndef PORT
@@ -14,30 +19,21 @@ endif
 
 .SILENT:
 
-.PHONY: compile upload test clean
+.PHONY: compile upload serial clean
 
 default: compile
 
 compile:
-	arduino-cli compile --fqbn $(FQBN) rc-start-light
+	arduino-cli compile --fqbn $(FQBN) --build-path $(BUILD_DIR) $(SRC_DIR)
 	echo "Done."
 
 upload:
 	arduino-cli compile --fqbn $(FQBN) --board-options $(BOARD_OPT) \
-			--upload --port $(PORT) rc-start-light
+			--upload --port $(PORT) --build-path $(BUILD_DIR) $(SRC_DIR)
 	echo "Uploaded."
 
 serial:
 	picocom -b 115200 $(PORT)
-
-$(BUILD_DIR):
-	mkdir -p $@
-
-$(BUILD_DIR)/test: $(BUILD_DIR)
-	$(CXX) -o $@ test/test.cpp
-
-test: $(BUILD_DIR)/test
-	./$(BUILD_DIR)/test
 
 clean:
 	rm -rf $(BUILD_DIR)
