@@ -192,10 +192,10 @@ void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
   // Buzzer
   if (is_buzzer_on) {
     if (state > STATE_STOP && state < STATE_GO) {
-      if (state_time < COUNT_INTERVAL / 2) digitalWrite(BUZZER_PIN, HIGH);
+      if (state_time < BUZZER_DURATION) digitalWrite(BUZZER_PIN, HIGH);
       else digitalWrite(BUZZER_PIN, LOW);
     } else if (state == STATE_GO) {
-      if (state_time < COUNT_INTERVAL * 2) digitalWrite(BUZZER_PIN, HIGH);
+      if (state_time < GO_STATE_DURATION - 1) digitalWrite(BUZZER_PIN, HIGH);
       else digitalWrite(BUZZER_PIN, LOW);
     } else {
       digitalWrite(BUZZER_PIN, LOW);
@@ -210,7 +210,7 @@ void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
  */
 int32_t get_next_state(int32_t mode, int32_t state, uint32_t state_time) {
   if (state >= STATE_GO) {
-    if (state_time >= COUNT_INTERVAL * 2) {
+    if (state_time >= GO_STATE_DURATION) {
       return STATE_STOP;
     }
   } else if (state > STATE_STOP) {

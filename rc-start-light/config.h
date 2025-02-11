@@ -42,6 +42,11 @@
 // Interval between each refresh loop (in milliseconds)
 #define REFRESH_INTERVAL 50
 
+// Duration of the last state (in milliseconds)
+#define GO_STATE_DURATION (COUNT_INTERVAL * 2)
+// Buzzer count duration (in milliseconds)
+#define BUZZER_DURATION (COUNT_INTERVAL / 2)
+
 // Customize colors
 #define COLOR_RED   0xff0000
 #define COLOR_AMBER 0xffaa00
