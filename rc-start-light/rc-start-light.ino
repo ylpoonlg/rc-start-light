@@ -34,6 +34,7 @@ int32_t last_state = STATE_OFF;
 uint32_t cur_state_start_time = 0;
 char log_buf[256];
 int32_t cur_mode = MODE_AUTO;
+bool is_buzzer_on = false;
 
 void update_state(int32_t state) {
   sprintf(log_buf, "[STATE] Update state: %d -> %d\r\n", cur_state, state);
@@ -59,12 +60,16 @@ void ir_scan() {
         update_state(STATE_STOP);
         if (!is_repeat)
           cur_mode = (cur_mode == MODE_AUTO) ? MODE_MANUAL : MODE_AUTO;
+        is_buzzer_on = (cur_mode == MODE_MANUAL);
         break;
       case IR_CMD_START:
         update_state(STATE_STOP + 1);
         break;
       case IR_CMD_OFF:
         update_state(STATE_OFF);
+        break;
+      case IR_CMD_BUZZER:
+        if (!is_repeat) is_buzzer_on = !is_buzzer_on;
         break;
       }
     }
@@ -107,7 +112,13 @@ void led_show() {
     sprintf(strip_s, "\033[48;2;%u;%u;%um  \033[0m ", r, g, b);
     Serial.print(strip_s);
   }
-  Serial.print("\033[0m");
+  Serial.print("\033[0m | \033[40m");
+  if (digitalRead(BUZZER_PIN)) {
+    Serial.print("\033[33mBUZZ");
+  } else {
+    Serial.print("    ");
+  }
+  Serial.print("\033[0m ");
 #endif
 }
 
@@ -177,6 +188,21 @@ void apply_state(int32_t mode, int32_t state, uint32_t state_time) {
 #endif
 
   led_show();
+
+  // Buzzer
+  if (is_buzzer_on) {
+    if (state > STATE_STOP && state < STATE_GO) {
+      if (state_time < COUNT_INTERVAL / 2) digitalWrite(BUZZER_PIN, HIGH);
+      else digitalWrite(BUZZER_PIN, LOW);
+    } else if (state == STATE_GO) {
+      if (state_time < COUNT_INTERVAL * 2) digitalWrite(BUZZER_PIN, HIGH);
+      else digitalWrite(BUZZER_PIN, LOW);
+    } else {
+      digitalWrite(BUZZER_PIN, LOW);
+    }
+  } else {
+    digitalWrite(BUZZER_PIN, LOW);
+  }
 }
 
 /**
@@ -199,6 +225,7 @@ int32_t get_next_state(int32_t mode, int32_t state, uint32_t state_time) {
 
 void setup() {
   pinMode(RST_BTN_PIN, INPUT_PULLUP);
+  pinMode(BUZZER_PIN, OUTPUT);
 
   Serial.begin(115200);
   IrReceiver.begin(IR_RCV_PIN, ENABLE_LED_FEEDBACK);

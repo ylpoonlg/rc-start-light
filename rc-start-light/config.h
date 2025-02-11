@@ -7,6 +7,8 @@
 #define IR_RCV_PIN 4
 //   * Reset button (optional)
 #define RST_BTN_PIN 2
+//   * Buzzer (optional)
+#define BUZZER_PIN 3
 
 // Number of pixels per led strips
 #define NUM_PIXELS 20
@@ -30,6 +32,8 @@
 #define IR_CMD_START 0x41
 //   * Turn off
 #define IR_CMD_OFF 0x5D
+//   * Toggle buzzer
+#define IR_CMD_BUZZER 0x5C
 
 // Interval between each step (in milliseconds)
 #define COUNT_INTERVAL 1000
